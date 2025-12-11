@@ -1,0 +1,785 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Flower Shop Order</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;500&family=Zen+Old+Mincho:wght@400;500;700&display=swap" rel="stylesheet">
+    
+    <style>
+        /* =========================================
+           Design System & Variables
+        ========================================= */
+        :root {
+            --bg-body: #faf9f6;
+            --bg-card: #ffffff;
+            --primary: #8da399;
+            --primary-light: #eef3f1;
+            --text-main: #4a4a4a;
+            --text-sub: #8c8c8c;
+            --radius-card: 24px;
+            --radius-btn: 50px;
+            --shadow-soft: 0 10px 40px -10px rgba(0,0,0,0.05);
+            --shadow-hover: 0 20px 50px -12px rgba(0,0,0,0.1);
+            --transition: cubic-bezier(0.2, 0.0, 0.2, 1) 0.3s;
+        }
+
+        body {
+            font-family: 'Noto Sans JP', sans-serif;
+            background-color: var(--bg-body);
+            background-image: radial-gradient(circle at 0% 0%, #fff0f0 0%, transparent 40%), 
+                              radial-gradient(circle at 100% 100%, #f0f8f5 0%, transparent 40%);
+            background-attachment: fixed;
+            color: var(--text-main);
+            margin: 0;
+            padding: 0;
+            line-height: 1.8;
+            -webkit-font-smoothing: antialiased;
+        }
+
+        h1, h2, h3, .serif-font {
+            font-family: 'Zen Old Mincho', serif;
+            letter-spacing: 0.05em;
+        }
+
+        /* --- Layout --- */
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 60px 20px 120px;
+        }
+
+        /* --- Header --- */
+        header {
+            text-align: center;
+            margin-bottom: 80px;
+        }
+
+        h1 {
+            font-size: 3rem;
+            font-weight: 500;
+            margin: 0 0 16px 0;
+            line-height: 1.2;
+        }
+
+        p.subtitle {
+            font-size: 0.95rem;
+            color: var(--text-sub);
+            letter-spacing: 0.1em;
+            margin: 0;
+        }
+
+        /* --- Sections --- */
+        .section-wrapper {
+            margin-bottom: 80px;
+            opacity: 0;
+            animation: slideUp 0.6s forwards;
+        }
+        
+        .section-wrapper:nth-child(2) { animation-delay: 0.1s; }
+        .section-wrapper:nth-child(3) { animation-delay: 0.2s; }
+        .section-wrapper:nth-child(4) { animation-delay: 0.3s; }
+
+        .section-header {
+            display: flex;
+            align-items: baseline;
+            margin-bottom: 24px;
+            border-bottom: 1px solid rgba(0,0,0,0.05);
+            padding-bottom: 12px;
+        }
+
+        .section-title {
+            font-size: 1.4rem;
+            font-weight: 500;
+            margin-right: 16px;
+            font-family: 'Zen Old Mincho', serif;
+        }
+
+        .badge {
+            font-size: 0.7rem;
+            padding: 4px 10px;
+            border-radius: 20px;
+            letter-spacing: 0.05em;
+            background: #fff;
+            border: 1px solid #ddd;
+            color: var(--text-sub);
+        }
+        .badge.required { 
+            border-color: var(--primary); 
+            color: var(--primary); 
+            background: var(--primary-light);
+        }
+
+        /* --- Cards --- */
+        .card-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+            gap: 24px;
+        }
+
+        .selection-card {
+            background: var(--bg-card);
+            border-radius: var(--radius-card);
+            overflow: hidden;
+            cursor: pointer;
+            transition: var(--transition);
+            box-shadow: var(--shadow-soft);
+            position: relative;
+            display: flex;
+            flex-direction: column;
+            border: 2px solid transparent;
+        }
+
+        .selection-card:hover {
+            transform: translateY(-4px);
+            box-shadow: var(--shadow-hover);
+        }
+
+        .selection-card.active {
+            border-color: var(--primary);
+            background-color: #fafbfb;
+        }
+
+        .selection-card.active::before {
+            content: '';
+            position: absolute;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: rgba(141, 163, 153, 0.1);
+            z-index: 1;
+            pointer-events: none;
+        }
+
+        .card-img-wrapper {
+            width: 100%;
+            aspect-ratio: 1 / 1;
+            background-color: #f0f0f0;
+            overflow: hidden;
+            position: relative;
+        }
+
+        .card-img-wrapper img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            transition: transform 0.6s ease;
+            opacity: 0; 
+        }
+        .card-img-wrapper img.loaded { opacity: 1; }
+
+        .selection-card:hover .card-img-wrapper img {
+            transform: scale(1.08);
+        }
+
+        .card-content {
+            padding: 16px;
+            text-align: center;
+            z-index: 2;
+        }
+
+        .card-title {
+            font-size: 0.95rem;
+            font-weight: 500;
+            margin-bottom: 4px;
+        }
+
+        .card-price {
+            font-size: 0.8rem;
+            color: var(--primary);
+            font-family: 'Zen Old Mincho', serif;
+        }
+
+        /* --- Buttons --- */
+        .simple-button-group {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 12px;
+        }
+
+        .simple-button {
+            padding: 12px 28px;
+            background-color: #fff;
+            border: 1px solid #e0e0e0;
+            border-radius: var(--radius-btn);
+            color: var(--text-sub);
+            font-size: 0.9rem;
+            cursor: pointer;
+            transition: var(--transition);
+        }
+
+        .simple-button:hover {
+            border-color: var(--primary);
+            color: var(--primary);
+        }
+
+        .simple-button.active {
+            background-color: var(--primary);
+            border-color: var(--primary);
+            color: white;
+            box-shadow: 0 4px 12px rgba(141, 163, 153, 0.4);
+        }
+
+        /* --- Forms --- */
+        .input-group { margin-bottom: 24px; }
+
+        input, select, textarea {
+            width: 100%;
+            padding: 18px 20px;
+            background-color: #fff;
+            border: 1px solid #e0e0e0;
+            border-radius: 12px;
+            font-size: 1rem;
+            color: var(--text-main);
+            box-sizing: border-box;
+            font-family: inherit;
+            transition: var(--transition);
+            appearance: none;
+        }
+
+        input:focus, select:focus, textarea:focus {
+            outline: none;
+            border-color: var(--primary);
+            box-shadow: 0 0 0 4px var(--primary-light);
+        }
+
+        /* --- Detail Box --- */
+        .detail-box {
+            background: #fff;
+            border-left: 4px solid var(--primary);
+            padding: 24px;
+            margin-top: 24px;
+            border-radius: 0 12px 12px 0;
+            box-shadow: var(--shadow-soft);
+            display: none;
+        }
+
+        /* --- Summary --- */
+        .summary-card {
+            background-color: #fff;
+            border-radius: var(--radius-card);
+            padding: 40px;
+            box-shadow: 0 -10px 40px rgba(0,0,0,0.08);
+            margin-top: 60px;
+        }
+
+        .info-row {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 16px;
+            font-size: 0.95rem;
+            border-bottom: 1px dashed #eee;
+            padding-bottom: 8px;
+        }
+        .info-row:last-of-type { border-bottom: none; }
+        .info-row label { color: var(--text-sub); font-size: 0.9rem; }
+        .info-row span { font-weight: 500; text-align: right; }
+
+        .total-price {
+            font-family: 'Zen Old Mincho', serif;
+            font-size: 2.5rem;
+            color: var(--primary);
+            text-align: right;
+            margin-top: 30px;
+            padding-top: 20px;
+            border-top: 2px solid var(--bg-body);
+        }
+
+        .submit-btn {
+            display: block;
+            width: 100%;
+            padding: 22px;
+            margin-top: 30px;
+            background-color: var(--text-main);
+            color: white;
+            border: none;
+            border-radius: var(--radius-btn);
+            font-size: 1.1rem;
+            font-weight: 500;
+            letter-spacing: 0.05em;
+            cursor: pointer;
+            transition: var(--transition);
+            box-shadow: 0 8px 24px rgba(0,0,0,0.2);
+        }
+
+        .submit-btn:hover {
+            transform: scale(1.02);
+            background-color: #000;
+        }
+
+        @keyframes slideUp {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        @media (max-width: 600px) {
+            .container { padding: 40px 20px; }
+            h1 { font-size: 2rem; }
+            .card-grid { grid-template-columns: repeat(2, 1fr); gap: 16px; }
+            .summary-card { padding: 24px; margin-top: 40px; }
+            .total-price { font-size: 2rem; }
+        }
+    </style>
+</head>
+
+<body>
+
+    <div class="container">
+        <header>
+            <h1>Flower Reservation</h1>
+            <p class="subtitle">特別なお花を、あなたのために。</p>
+        </header>
+
+        <div class="section-wrapper">
+            <div class="section-header">
+                <span class="section-title">01. Select Store</span>
+                <span class="badge required">必須</span>
+            </div>
+            <div class="card-grid" id="store-area"></div>
+        </div>
+
+        <div class="section-wrapper">
+            <div class="section-header">
+                <span class="section-title">02. Product Type</span>
+                <span class="badge required">必須</span>
+            </div>
+            <div class="card-grid" id="category-area"></div>
+        </div>
+
+        <div class="section-wrapper">
+            <div class="section-header">
+                <span class="section-title">03. Budget</span>
+                <span class="badge required">必須</span>
+            </div>
+            <div class="simple-button-group" id="price-area">
+                <span style="font-size:14px; color:var(--text-sub); padding:10px;">先に商品タイプを選択してください</span>
+            </div>
+            
+            <div id="product-detail-box" class="detail-box">
+                <h4 style="margin:0 0 8px 0; font-family:'Zen Old Mincho', serif;">About This Size</h4>
+                <p id="detail-text" style="margin:0; font-size:0.9rem; color:var(--text-sub);"></p>
+            </div>
+        </div>
+
+        <div class="section-wrapper" id="style-section" style="display:none;">
+            <div class="section-header">
+                <span class="section-title">04. Style</span>
+                <span class="badge optional">任意</span>
+            </div>
+            <div class="card-grid" id="style-area"></div>
+        </div>
+
+        <div class="section-wrapper">
+            <div class="section-header">
+                <span class="section-title">05. Color Palette</span>
+                <span class="badge optional">任意</span>
+            </div>
+            <div class="card-grid" id="color-area"></div>
+        </div>
+
+        <div class="section-wrapper">
+            <div class="section-header">
+                <span class="section-title">06. Mood & Image</span>
+                <span class="badge optional">任意</span>
+            </div>
+            <div class="card-grid" id="image-area"></div>
+        </div>
+
+        <div class="section-wrapper">
+            <div class="section-header">
+                <span class="section-title">07. Occasion</span>
+                <span class="badge optional">任意</span>
+            </div>
+            <div class="simple-button-group" id="usage-area"></div>
+        </div>
+
+        <div class="section-wrapper">
+            <div class="section-header">
+                <span class="section-title">08. Options</span>
+                <span class="badge required">必須</span>
+            </div>
+            <div class="card-grid" id="option-area"></div>
+        </div>
+
+        <div class="section-wrapper">
+            <div class="section-header">
+                <span class="section-title">09. Date & Time</span>
+                <span class="badge required">必須</span>
+            </div>
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap:16px;">
+                <select id="pickup-date" onchange="updateTimeOptions()"></select>
+                <select id="pickup-time" onchange="updateSummary()"></select>
+            </div>
+        </div>
+
+        <div class="section-wrapper">
+            <div class="section-header">
+                <span class="section-title">Customer Info</span>
+                <span class="badge required">必須</span>
+            </div>
+            <div class="input-group">
+                <input type="text" id="name" placeholder="お名前" oninput="updateSummary()">
+            </div>
+            <div class="input-group">
+                <input type="tel" id="phone" placeholder="電話番号 (ハイフンなし)" oninput="updateSummary()">
+            </div>
+            <div class="input-group">
+                <textarea id="message" rows="4" placeholder="メッセージカードの内容や、その他ご要望をご記入ください" oninput="updateSummary()"></textarea>
+            </div>
+        </div>
+
+        <div class="summary-card">
+            <h3 style="margin-top:0; text-align:center;">Reservation Summary</h3>
+            <div id="displayInfo" style="margin-top:24px;">
+                <p style="text-align:center; color:#ccc;">選択内容がここに表示されます</p>
+            </div>
+            <button class="submit-btn" onclick="submitForm()">予約を確定する</button>
+        </div>
+    </div>
+
+    <script src="https://static.line-scdn.net/liff/edge/2.1/sdk.js"></script>
+
+    <script>
+        // ==========================================
+        //  設定 & データ定義
+        //  ★ここに好きな画像のURLを入れてください
+        // ==========================================
+        
+        const SHOP_DATA = {
+            stores: [
+                { name: '大阪店', imageUrl: 'https://www.dropbox.com/scl/fi/vyhj9oz37ygl4q6ujg2vj/isely-_.jpg?rlkey=0sqjoj0m1zjaagp9q2tsokpuj&st=5yz9v2x2&raw=1' },
+                { name: '奈良店', imageUrl: 'https://www.dropbox.com/scl/fi/vyhj9oz37ygl4q6ujg2vj/isely-_.jpg?rlkey=0sqjoj0m1zjaagp9q2tsokpuj&st=5yz9v2x2&raw=1' }
+            ],
+            categories: [
+                { id: 'bouquet', name: '花束', imageUrl: 'https://www.dropbox.com/scl/fi/vyhj9oz37ygl4q6ujg2vj/isely-_.jpg?rlkey=0sqjoj0m1zjaagp9q2tsokpuj&st=5yz9v2x2&raw=1' },
+                { id: 'arrangement', name: 'アレンジメント', imageUrl: 'https://www.dropbox.com/scl/fi/vyhj9oz37ygl4q6ujg2vj/isely-_.jpg?rlkey=0sqjoj0m1zjaagp9q2tsokpuj&st=5yz9v2x2&raw=1' }
+            ],
+            styles: [
+                { name: 'ロングタイプ', imageUrl: 'https://www.dropbox.com/scl/fi/vyhj9oz37ygl4q6ujg2vj/isely-_.jpg?rlkey=0sqjoj0m1zjaagp9q2tsokpuj&st=5yz9v2x2&raw=1' },
+                { name: 'ブーケタイプ', imageUrl: 'https://www.dropbox.com/scl/fi/vyhj9oz37ygl4q6ujg2vj/isely-_.jpg?rlkey=0sqjoj0m1zjaagp9q2tsokpuj&st=5yz9v2x2&raw=1' }
+            ],
+            colors: [
+                { name: '白グリーン系', imageUrl: 'https://www.dropbox.com/scl/fi/vyhj9oz37ygl4q6ujg2vj/isely-_.jpg?rlkey=0sqjoj0m1zjaagp9q2tsokpuj&st=5yz9v2x2&raw=1' },
+                { name: 'イエローオレンジ', imageUrl: 'https://www.dropbox.com/scl/fi/vyhj9oz37ygl4q6ujg2vj/isely-_.jpg?rlkey=0sqjoj0m1zjaagp9q2tsokpuj&st=5yz9v2x2&raw=1' },
+                { name: 'ピンク系', imageUrl: 'https://www.dropbox.com/scl/fi/vyhj9oz37ygl4q6ujg2vj/isely-_.jpg?rlkey=0sqjoj0m1zjaagp9q2tsokpuj&st=5yz9v2x2&raw=1' },
+                { name: '赤系', imageUrl: 'https://www.dropbox.com/scl/fi/vyhj9oz37ygl4q6ujg2vj/isely-_.jpg?rlkey=0sqjoj0m1zjaagp9q2tsokpuj&st=5yz9v2x2&raw=1' },
+                { name: 'ブルー紫系', imageUrl: 'https://www.dropbox.com/scl/fi/vyhj9oz37ygl4q6ujg2vj/isely-_.jpg?rlkey=0sqjoj0m1zjaagp9q2tsokpuj&st=5yz9v2x2&raw=1' },
+                { name: 'おまかせ', imageUrl: 'https://www.dropbox.com/scl/fi/vyhj9oz37ygl4q6ujg2vj/isely-_.jpg?rlkey=0sqjoj0m1zjaagp9q2tsokpuj&st=5yz9v2x2&raw=1' }
+            ],
+            images: [
+                { name: 'キュート', imageUrl: 'https://www.dropbox.com/scl/fi/vyhj9oz37ygl4q6ujg2vj/isely-_.jpg?rlkey=0sqjoj0m1zjaagp9q2tsokpuj&st=5yz9v2x2&raw=1' },
+                { name: 'シック', imageUrl: 'https://www.dropbox.com/scl/fi/vyhj9oz37ygl4q6ujg2vj/isely-_.jpg?rlkey=0sqjoj0m1zjaagp9q2tsokpuj&st=5yz9v2x2&raw=1' },
+                { name: 'アンティーク', imageUrl: 'https://www.dropbox.com/scl/fi/vyhj9oz37ygl4q6ujg2vj/isely-_.jpg?rlkey=0sqjoj0m1zjaagp9q2tsokpuj&st=5yz9v2x2&raw=1' },
+                { name: 'ナチュラル', imageUrl: 'https://www.dropbox.com/scl/fi/vyhj9oz37ygl4q6ujg2vj/isely-_.jpg?rlkey=0sqjoj0m1zjaagp9q2tsokpuj&st=5yz9v2x2&raw=1' },
+                { name: '季節のお花', imageUrl: 'https://www.dropbox.com/scl/fi/vyhj9oz37ygl4q6ujg2vj/isely-_.jpg?rlkey=0sqjoj0m1zjaagp9q2tsokpuj&st=5yz9v2x2&raw=1' }
+            ],
+            usages: ['誕生日', '送別', '記念日', '発表会', 'お供え', '自分へのご褒美', 'その他'],
+            options: [
+                { name: 'メッセージカード', price: 250, imageUrl: 'https://www.dropbox.com/scl/fi/vyhj9oz37ygl4q6ujg2vj/isely-_.jpg?rlkey=0sqjoj0m1zjaagp9q2tsokpuj&st=5yz9v2x2&raw=1' },
+                { name: 'ラッピング', price: 300, imageUrl: 'https://www.dropbox.com/scl/fi/vyhj9oz37ygl4q6ujg2vj/isely-_.jpg?rlkey=0sqjoj0m1zjaagp9q2tsokpuj&st=5yz9v2x2&raw=1' },
+                { name: '持ち帰り袋', price: 300, imageUrl: 'https://www.dropbox.com/scl/fi/vyhj9oz37ygl4q6ujg2vj/isely-_.jpg?rlkey=0sqjoj0m1zjaagp9q2tsokpuj&st=5yz9v2x2&raw=1' },
+                { name: '無し', price: 0, imageUrl: 'https://www.dropbox.com/scl/fi/vyhj9oz37ygl4q6ujg2vj/isely-_.jpg?rlkey=0sqjoj0m1zjaagp9q2tsokpuj&st=5yz9v2x2&raw=1' }
+            ],
+            details: {
+                bouquet: {
+                    base: "季節の花材をふんだんに使用し、デザイナーが丁寧に束ねます。",
+                    small: "【Mini】ちょっとした手土産や、日常の彩りに。",
+                    medium: "【Standard】サイズ感とボリュームのバランスが良い人気サイズ。",
+                    large: "【Luxury】抱えるほどの大きさ。特別な日のサプライズに。"
+                },
+                arrangement: {
+                    base: "吸水性スポンジにお花を挿し、そのまま飾れるスタイルです。",
+                    small: "【S Size】食卓やデスク周りに飾れるコンパクトサイズ。",
+                    medium: "【M Size】玄関やリビングの主役になる存在感。",
+                    large: "【L Size】開店祝いや公演祝いなど、華やかなシーンに。"
+                }
+            },
+            prices: {
+                bouquet: [3300, 4400, 5500, 6600, 7700, 10000, 16500],
+                arrangement: [3300, 4400, 5500, 7700, 10000, 15000, 22000]
+            }
+        };
+
+        const orderData = {
+            store: '', category: '', categoryLabel: '', price: 0,
+            style: '', color: '', image: '', usage: '',
+            options: [], date: '', time: '', name: '', phone: '', message: ''
+        };
+
+        // ==========================================
+        //  UI Rendering
+        // ==========================================
+        document.addEventListener('DOMContentLoaded', async () => {
+            initDateOptions();
+            liff.init({ liffId: 'YOUR_LIFF_ID' }).catch(e => console.log('LIFF Init failed (dev mode)'));
+
+            renderImageButtons('store-area', SHOP_DATA.stores, 'selectStore');
+            renderImageButtons('category-area', SHOP_DATA.categories, 'selectCategory');
+            renderImageButtons('style-area', SHOP_DATA.styles, 'selectStyle');
+            renderImageButtons('color-area', SHOP_DATA.colors, 'selectColor');
+            renderImageButtons('image-area', SHOP_DATA.images, 'selectImage');
+            renderOptionButtons();
+            renderSimpleButtons('usage-area', SHOP_DATA.usages, 'selectUsage');
+        });
+
+        // 画像付きボタンの描画 (URL直接指定版)
+        function renderImageButtons(containerId, items, clickHandlerName) {
+            const container = document.getElementById(containerId);
+            container.innerHTML = '';
+
+            for (const item of items) {
+                const btn = document.createElement('div');
+                btn.className = 'selection-card';
+                // HTML構造
+                btn.innerHTML = `
+                    <div class="card-img-wrapper">
+                        <img src="${item.imageUrl}" alt="${item.name}" loading="lazy">
+                    </div>
+                    <div class="card-content">
+                        <div class="card-title">${item.name}</div>
+                        ${item.price ? `<div class="card-price">+${item.price.toLocaleString()}円</div>` : ''}
+                    </div>
+                `;
+                
+                // 画像ロード時のフェードイン処理
+                const img = btn.querySelector('img');
+                img.onload = () => img.classList.add('loaded');
+                
+                // イベント設定
+                const val = item.id || item.name;
+                const price = item.price || 0;
+                btn.setAttribute('onclick', `${clickHandlerName}(this, '${val}', ${price})`);
+                container.appendChild(btn);
+            }
+        }
+
+        function renderSimpleButtons(containerId, items, clickHandlerName) {
+            const container = document.getElementById(containerId);
+            items.forEach(item => {
+                const btn = document.createElement('div');
+                btn.className = 'simple-button';
+                btn.textContent = item;
+                btn.setAttribute('onclick', `${clickHandlerName}(this, '${item}')`);
+                container.appendChild(btn);
+            });
+        }
+
+        function renderOptionButtons() {
+            const container = document.getElementById('option-area');
+            container.innerHTML = '';
+            for (const item of SHOP_DATA.options) {
+                const btn = document.createElement('div');
+                btn.className = 'selection-card';
+                btn.innerHTML = `
+                    <div class="card-img-wrapper">
+                        <img src="${item.imageUrl}" alt="${item.name}" loading="lazy">
+                    </div>
+                    <div class="card-content">
+                        <div class="card-title">${item.name}</div>
+                        <div class="card-price">${item.price > 0 ? '+' + item.price + '円' : '¥0'}</div>
+                    </div>
+                `;
+                const img = btn.querySelector('img');
+                img.onload = () => img.classList.add('loaded');
+
+                btn.onclick = () => selectOptionMulti(btn, item.name, item.price);
+                container.appendChild(btn);
+            }
+        }
+
+        // ==========================================
+        //  User Actions (変更なし)
+        // ==========================================
+        function setActive(element) {
+            const parent = element.parentElement;
+            Array.from(parent.children).forEach(c => c.classList.remove('active'));
+            element.classList.add('active');
+        }
+
+        function selectStore(el, name) {
+            setActive(el);
+            orderData.store = name;
+            updateSummary();
+        }
+
+        function selectCategory(el, id) {
+            setActive(el);
+            orderData.category = id;
+            orderData.categoryLabel = (id === 'bouquet') ? '花束' : 'アレンジメント';
+            orderData.price = 0;
+
+            // 価格ボタン生成
+            const priceArea = document.getElementById('price-area');
+            priceArea.innerHTML = '';
+            SHOP_DATA.prices[id].forEach(p => {
+                const btn = document.createElement('div');
+                btn.className = 'simple-button';
+                btn.textContent = p.toLocaleString() + '円';
+                btn.onclick = () => {
+                    setActive(btn);
+                    orderData.price = p;
+                    updateDetailText();
+                    updateSummary();
+                };
+                priceArea.appendChild(btn);
+            });
+
+            // スタイルエリア表示切り替え
+            const styleSec = document.getElementById('style-section');
+            if (id === 'bouquet') {
+                styleSec.style.display = 'block';
+                styleSec.style.animation = 'slideUp 0.5s';
+            } else {
+                styleSec.style.display = 'none';
+                orderData.style = '';
+            }
+            updateDetailText();
+            updateSummary();
+        }
+
+        function updateDetailText() {
+            const box = document.getElementById('product-detail-box');
+            const textEl = document.getElementById('detail-text');
+            if (!orderData.category) {
+                box.style.display = 'none';
+                return;
+            }
+            box.style.display = 'block';
+            
+            let text = SHOP_DATA.details[orderData.category].base;
+            if (orderData.price > 0) {
+                const prices = SHOP_DATA.prices[orderData.category];
+                if (orderData.price <= prices[1]) text += "<br>" + SHOP_DATA.details[orderData.category].small;
+                else if (orderData.price <= prices[prices.length - 3]) text += "<br>" + SHOP_DATA.details[orderData.category].medium;
+                else text += "<br>" + SHOP_DATA.details[orderData.category].large;
+            } else {
+                text += "<br><span style='color:var(--primary); font-weight:bold;'>ご予算を選択してください</span>";
+            }
+            textEl.innerHTML = text;
+        }
+
+        function selectStyle(el, val) { setActive(el); orderData.style = val; updateSummary(); }
+        function selectColor(el, val) { setActive(el); orderData.color = val; updateSummary(); }
+        function selectImage(el, val) { setActive(el); orderData.image = val; updateSummary(); }
+        function selectUsage(el, val) { setActive(el); orderData.usage = val; updateSummary(); }
+
+        function selectOptionMulti(btn, name, price) {
+            if (name === '無し') {
+                orderData.options = [];
+                const siblings = btn.parentElement.children;
+                Array.from(siblings).forEach(b => b.classList.remove('active'));
+                btn.classList.add('active');
+            } else {
+                const group = btn.parentElement;
+                const noneBtn = Array.from(group.children).find(b => b.textContent.includes('無し'));
+                if (noneBtn && noneBtn.classList.contains('active')) noneBtn.classList.remove('active');
+
+                const idx = orderData.options.findIndex(o => o.name === name);
+                if (idx > -1) {
+                    orderData.options.splice(idx, 1);
+                    btn.classList.remove('active');
+                } else {
+                    orderData.options.push({ name: name, price: price });
+                    btn.classList.add('active');
+                }
+            }
+            updateSummary();
+        }
+
+        // ==========================================
+        //  Date & Calculation
+        // ==========================================
+        function initDateOptions() {
+            const sel = document.getElementById('pickup-date');
+            sel.innerHTML = '<option value="" disabled selected>日付を選択</option>';
+            const today = new Date();
+            for (let i = 1; i <= 30; i++) {
+                const d = new Date(today);
+                d.setDate(today.getDate() + i);
+                const y = d.getFullYear();
+                const m = (d.getMonth() + 1).toString().padStart(2, '0');
+                const day = d.getDate().toString().padStart(2, '0');
+                const w = ['日','月','火','水','木','金','土'][d.getDay()];
+                const opt = document.createElement('option');
+                opt.value = `${y}-${m}-${day}`;
+                opt.textContent = `${m}/${day} (${w})`;
+                sel.appendChild(opt);
+            }
+        }
+
+        function updateTimeOptions() {
+            const sel = document.getElementById('pickup-time');
+            sel.innerHTML = '<option value="" disabled selected>時間</option>';
+            const start = 10, end = 19;
+            for (let h = start; h <= end; h++) {
+                ['00', '30'].forEach(m => {
+                    const val = `${h.toString().padStart(2,'0')}:${m}`;
+                    const opt = document.createElement('option');
+                    opt.value = val; 
+                    opt.textContent = val;
+                    sel.appendChild(opt);
+                });
+            }
+            orderData.date = document.getElementById('pickup-date').value;
+            updateSummary();
+        }
+
+        function updateSummary() {
+            orderData.time = document.getElementById('pickup-time').value;
+            orderData.name = document.getElementById('name').value;
+            orderData.phone = document.getElementById('phone').value;
+            orderData.message = document.getElementById('message').value;
+
+            const optionTotal = orderData.options.reduce((sum, o) => sum + o.price, 0);
+            const total = orderData.price + optionTotal;
+            const optionStr = orderData.options.length ? orderData.options.map(o => o.name).join(', ') : '選択なし';
+
+            const html = `
+                <div class="info-row"><label>STORE</label><span>${orderData.store || '-'}</span></div>
+                <div class="info-row"><label>ITEM</label><span>${orderData.categoryLabel || '-'}</span></div>
+                <div class="info-row"><label>PRICE</label><span>${orderData.price ? orderData.price.toLocaleString()+'円' : '-'}</span></div>
+                ${orderData.style ? `<div class="info-row"><label>STYLE</label><span>${orderData.style}</span></div>` : ''}
+                <div class="info-row"><label>COLOR</label><span>${orderData.color || '-'}</span></div>
+                <div class="info-row"><label>IMAGE</label><span>${orderData.image || '-'}</span></div>
+                <div class="info-row"><label>FOR</label><span>${orderData.usage || '-'}</span></div>
+                <div class="info-row"><label>OPTION</label><span>${optionStr}</span></div>
+                <div class="info-row"><label>DATE</label><span>${orderData.date} ${orderData.time}</span></div>
+                <div class="total-price">Total: ${total.toLocaleString()} <span style="font-size:1rem;color:var(--text-main);">JPY</span></div>
+            `;
+            document.getElementById('displayInfo').innerHTML = html;
+        }
+
+        function submitForm() {
+            if (!orderData.store || !orderData.category || !orderData.price || !orderData.date || !orderData.time || !orderData.name || !orderData.phone) {
+                alert('必須項目（バッジがついている項目）をすべて入力してください。');
+                return;
+            }
+
+            const opts = orderData.options.map(o => `${o.name}(+${o.price})`).join(', ') || '無し';
+            const total = orderData.price + orderData.options.reduce((s,o)=>s+o.price,0);
+            
+            const msg = `【予約注文】\n`
+                + `店舗: ${orderData.store}\n`
+                + `商品: ${orderData.categoryLabel} (${orderData.price.toLocaleString()}円)\n`
+                + `詳細: ${orderData.style||'-'} / ${orderData.color||'-'} / ${orderData.image||'-'}\n`
+                + `用途: ${orderData.usage||'-'}\n`
+                + `OP: ${opts}\n`
+                + `受取: ${orderData.date} ${orderData.time}\n`
+                + `氏名: ${orderData.name}\n`
+                + `電話: ${orderData.phone}\n`
+                + `備考: ${orderData.message}\n`
+                + `-----------------\n`
+                + `合計: ${total.toLocaleString()}円`;
+
+            if (liff.isInClient()) {
+                liff.sendMessages([{ type: 'text', text: msg }])
+                    .then(() => liff.closeWindow())
+                    .catch(e => alert('送信エラー: ' + e));
+            } else {
+                alert('以下の内容で予約を受け付けました（デモ）:\n\n' + msg);
+                console.log(msg);
+            }
+        }
+    </script>
+</body>
+</html>
