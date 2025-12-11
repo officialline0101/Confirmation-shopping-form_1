@@ -602,7 +602,7 @@
             updateSummary();
         }
 
-        function selectCategory(el, id) {
+function selectCategory(el, id) {
             setActive(el);
             orderData.category = id;
             orderData.categoryLabel = (id === 'bouquet') ? '花束' : 'アレンジメント';
@@ -624,19 +624,25 @@
                 priceArea.appendChild(btn);
             });
 
-            // スタイルエリア表示切り替え
+            // ▼▼▼▼▼▼▼▼▼ 修正箇所 ▼▼▼▼▼▼▼▼▼
+            // 以前の if(id === 'bouquet') {...} else { display='none' } を削除し、
+            // 常に表示するように変更しました。
+            
             const styleSec = document.getElementById('style-section');
-            if (id === 'bouquet') {
+            
+            // 現在非表示なら、表示してアニメーションを実行
+            if (styleSec.style.display === 'none') {
                 styleSec.style.display = 'block';
-                styleSec.style.animation = 'slideUp 0.5s';
-            } else {
-                styleSec.style.display = 'none';
-                orderData.style = '';
+                styleSec.style.animation = 'none'; // アニメーションリセット
+                styleSec.offsetHeight; // リフロー（再描画）の強制トリガー
+                styleSec.style.animation = 'slideUp 0.5s forwards';
             }
+            // ▲▲▲▲▲▲▲▲▲ 修正箇所ここまで ▲▲▲▲▲▲▲▲▲
+
             updateDetailText();
             updateSummary();
         }
-
+        
         function updateDetailText() {
             const box = document.getElementById('product-detail-box');
             const textEl = document.getElementById('detail-text');
